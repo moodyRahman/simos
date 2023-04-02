@@ -1,8 +1,13 @@
 // Moududur Rahman
 #include "SimOS.h"
 
-int main(int argc, char const *argv[])
+SimOS::SimOS(int numberOfDisks, int amountOfRAM)
 {
-    std::cout << "hello world" << std::endl;
-    return 0;
+    this->total_memory = amountOfRAM;
+}
+
+bool SimOS::NewProcess(int priority, int size)
+{
+    Process p{priority, size};
+    this->process_queue.push(p);
 }

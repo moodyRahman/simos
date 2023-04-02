@@ -8,6 +8,17 @@ struct Process
 {
     int priority;
     int size;
+
+    friend bool operator<(Process const &a, Process const &b)
+    {
+        return a.priority < b.priority;
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const Process &p)
+    {
+        os << "priority:" << p.priority << " | "
+           << "memory usage: " << p.size;
+    }
 };
 
 struct FileReadRequest
@@ -18,6 +29,11 @@ struct FileReadRequest
 
 class SimOS
 {
+public:
+    std::priority_queue<Process, std::vector<Process>, std::less<Process>> process_queue;
+    int total_memory;
+    int used_memory;
+
     SimOS(int numberOfDisks, int amountOfRAM);
     bool NewProcess(int priority, int size);
     bool SimFork();

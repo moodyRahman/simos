@@ -3,6 +3,19 @@
 #include <vector>
 #include <iostream>
 #include <queue>
+
+struct Process
+{
+    int priority;
+    int size;
+};
+
+struct FileReadRequest
+{
+    int PID;
+    std::string fileName;
+};
+
 class SimOS
 {
     SimOS(int numberOfDisks, int amountOfRAM);
@@ -16,16 +29,4 @@ class SimOS
     std::vector<int> GetReadyQueue();
     FileReadRequest GetDisk(int diskNumber);
     std::queue<FileReadRequest> GetDiskQueue(int diskNumber);
-};
-
-struct Process
-{
-    int priority;
-    int size;
-};
-
-struct FileReadRequest
-{
-    int PID;
-    std::string fileName;
 };

@@ -8,15 +8,26 @@ struct Process
 {
     int priority;
     int size;
+    int PID;
 
     friend bool operator<(Process const &a, Process const &b)
     {
+        /**
+         * while std::priority queue is weakly stable, it's not guaranteed to maintain
+         * order of insertion when two processes have the same priority.
+         * fall back to ordering by PID for equal priority processes
+         */
+        if (a.priority == b.priority)
+        {
+            return b.PID > a.PID;
+        }
         return a.priority < b.priority;
     }
 
     friend std::ostream &operator<<(std::ostream &os, const Process &p)
     {
-        os << "priority:" << p.priority << " | "
+        os << "pid: " << p.PID << " | "
+           << "priority:" << p.priority << " | "
            << "memory usage: " << p.size;
     }
 };

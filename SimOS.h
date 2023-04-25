@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <queue>
+#include <algorithm>
 
 struct Process
 {
@@ -62,8 +63,11 @@ class SimOS
 {
 public:
     std::priority_queue<Process, std::vector<Process>, std::less<Process>> process_queue;
+    // TODO: reimplement this with a heap so that we can guarantee that it's in order when we traverse it
+    std::vector<MemoryItem> MemoryUsage;
     int total_memory;
-    int used_memory;
+    int used_memory = 0;
+    int PID_c = 1;
 
     SimOS(int numberOfDisks, int amountOfRAM);
     bool NewProcess(int priority, int size);

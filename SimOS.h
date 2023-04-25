@@ -38,6 +38,26 @@ struct FileReadRequest
     std::string fileName;
 };
 
+struct MemoryItem
+{
+    unsigned long long itemAddress;
+    unsigned long long itemAddressEnd;
+    unsigned long long itemSize;
+    int PID; // PID of the process using this chunk of memory
+
+    friend std::ostream &operator<<(std::ostream &os, const MemoryItem &p)
+    {
+        os << "address: " << p.itemAddress << " to " << p.itemAddressEnd << " | "
+           << "size:" << p.itemSize << " | "
+           << "PID: " << p.PID;
+    }
+
+    friend bool operator<(MemoryItem const &a, MemoryItem const &b)
+    {
+        return a.itemAddress < b.itemAddress;
+    }
+};
+
 class SimOS
 {
 public:

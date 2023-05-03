@@ -4,6 +4,8 @@
 #include <iostream>
 #include <queue>
 #include <algorithm>
+#include <memory>
+#define ADDRESS unsigned long long
 
 struct Process
 {
@@ -41,9 +43,9 @@ struct FileReadRequest
 
 struct MemoryItem
 {
-    unsigned long long itemAddress;
-    unsigned long long itemAddressEnd;
-    unsigned long long itemSize;
+    ADDRESS itemAddress;
+    ADDRESS itemAddressEnd;
+    ADDRESS itemSize;
     int PID; // PID of the process using this chunk of memory
 
     friend std::ostream &operator<<(std::ostream &os, const MemoryItem &p)

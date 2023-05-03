@@ -61,6 +61,26 @@ struct MemoryItem
     }
 };
 
+struct Hole
+{
+    ADDRESS start;
+    ADDRESS end;
+    ADDRESS size;
+
+    friend std::ostream &operator<<(std::ostream &os, const Hole &p)
+    {
+        os << "hole from: " << p.start << " | "
+           << "until " << p.end << " | "
+           << "size: " << p.size;
+    }
+
+    // it's a little hacky but it's
+    friend bool operator>(Hole const &a, Hole const &b)
+    {
+        return a.size > b.size;
+    }
+};
+
 class SimOS
 {
 public:

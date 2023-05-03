@@ -6,26 +6,6 @@ SimOS::SimOS(int numberOfDisks, int amountOfRAM)
     this->total_memory = amountOfRAM;
 }
 
-struct Hole
-{
-    ADDRESS start;
-    ADDRESS end;
-    ADDRESS size;
-
-    friend std::ostream &operator<<(std::ostream &os, const Hole &p)
-    {
-        os << "hole from: " << p.start << " | "
-           << "until " << p.end << " | "
-           << "size: " << p.size;
-    }
-
-    // it's a little hacky but it's
-    friend bool operator>(Hole const &a, Hole const &b)
-    {
-        return a.size > b.size;
-    }
-};
-
 bool SimOS::NewProcess(int priority, int size)
 {
     if (size > total_memory - used_memory)

@@ -31,7 +31,7 @@ int main(int argc, char const *argv[])
     s.SimExit();
     std::cout << "exited" << std::endl;
 
-    s.NewProcess(2, 5);
+    s.NewProcess(2, 600);
     s.NewProcess(2, 5);
     s.NewProcess(4, 5);
     s.NewProcess(4, 5);

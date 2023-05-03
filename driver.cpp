@@ -15,30 +15,26 @@ int main(int argc, char const *argv[])
     // s.NewProcess(5, 5);
     // s.NewProcess(5, 5);
     // s.NewProcess(2, 5);
-
-    s.MemoryUsage.push_back(
-        MemoryItem{
-            (unsigned long long)0,
-            (unsigned long long)5,
-            (unsigned long long)5,
-            10});
-
-    s.MemoryUsage.push_back(
-        MemoryItem{
-            (unsigned long long)15,
-            (unsigned long long)20,
-            (unsigned long long)5,
-            11});
-
-    s.MemoryUsage.push_back(
-        MemoryItem{
-            (unsigned long long)30,
-            (unsigned long long)35,
-            (unsigned long long)5,
-            12});
-
     s.NewProcess(2, 15);
     s.NewProcess(2, 10);
+    s.NewProcess(4, 10);
+    s.NewProcess(3, 5);
+    s.NewProcess(2, 10);
+    s.NewProcess(2, 10);
+    s.NewProcess(3, 5);
+    s.NewProcess(3, 5);
+    s.NewProcess(4, 5);
+    s.NewProcess(3, 5);
+
+    s.SimExit();
+    std::cout << "exited" << std::endl;
+    s.SimExit();
+    std::cout << "exited" << std::endl;
+
+    s.NewProcess(2, 5);
+    s.NewProcess(2, 5);
+    s.NewProcess(4, 5);
+    s.NewProcess(4, 5);
     s.NewProcess(2, 5);
     s.NewProcess(2, 5);
 
@@ -48,7 +44,8 @@ int main(int argc, char const *argv[])
     //     s.process_queue.pop();
     // }
 
-    std::cout << "=============" << std::endl;
+    std::cout
+        << "=============" << std::endl;
     for (auto x : s.MemoryUsage)
     {
         std::cout << x << std::endl;

@@ -6,88 +6,133 @@ SimOS::SimOS(int numberOfDisks, int amountOfRAM)
     this->total_memory = amountOfRAM;
 }
 
+struct Hole
+{
+    ADDRESS start;
+    ADDRESS end;
+    ADDRESS size;
+
+    friend std::ostream &operator<<(std::ostream &os, const Hole &p)
+    {
+        os << "hole from: " << p.start << " | "
+           << "until " << p.end << " | "
+           << "size: " << p.size;
+    }
+
+    // it's a little hacky but it's
+    friend bool operator>(Hole const &a, Hole const &b)
+    {
+        return a.size > b.size;
+    }
+};
+
 bool SimOS::NewProcess(int priority, int size)
 {
-    if (size > total_memory)
+    if (size > total_memory - used_memory)
     {
         return false;
     }
 
-    // opting to use iterators because it lets us use safer left/right accessors
-    // without causing segfaults
-
     bool found_valid_memory = false;
 
-    for (auto it = this->MemoryUsage.begin(); it != (this->MemoryUsage.end()); it++)
-    {
-        // case if there's only one entry in the memory usage array
-        if (it + 1 == this->MemoryUsage.end())
-        {
-            if ((it->itemAddressEnd + size) < this->total_memory)
-            {
-
-                process_queue.push(
-                    Process{
-                        priority, size, PID_c});
-
-                MemoryUsage.push_back(
-                    MemoryItem{
-                        (unsigned long long)it->itemAddressEnd,
-                        (unsigned long long)it->itemAddressEnd + size,
-                        (unsigned long long)size,
-                        PID_c});
-
-                found_valid_memory = true;
-                break;
-            }
-        }
-        else
-        {
-            if ((it + 1)->itemAddress - it->itemAddressEnd >= size)
-            {
-                process_queue.push(
-                    Process{
-                        priority, size, PID_c});
-                MemoryUsage.push_back(
-                    MemoryItem{
-                        (unsigned long long)it->itemAddressEnd,
-                        (unsigned long long)it->itemAddressEnd + size,
-                        (unsigned long long)size,
-                        PID_c});
-
-                found_valid_memory = true;
-                break;
-            }
-        }
-    }
-
-    // handle case if there are no processes using memory, ie MemoryUsage is empty
-    // start the addresses from 1 so that when we subtract addresses, the difference
-    // is the size between addresses
     if (MemoryUsage.size() == 0)
     {
-        std::cout << "added one" << std::endl;
-        found_valid_memory = true;
         process_queue.push(
             Process{
                 priority, size, PID_c});
         MemoryUsage.push_back(
             MemoryItem{
-                (unsigned long long)1,
-                (unsigned long long)1 + size,
-                (unsigned long long)size,
+                (ADDRESS)0,
+                (ADDRESS)size,
+                (ADDRESS)size,
                 PID_c});
-    }
-
-    if (found_valid_memory)
-    {
         this->used_memory += size;
         this->PID_c++;
+        return true;
     }
 
-    std::sort(MemoryUsage.begin(), MemoryUsage.end());
+    if (MemoryUsage.size() == 1)
+    {
+        auto left = MemoryUsage[0];
+        process_queue.push(
+            Process{
+                priority, size, PID_c});
+        MemoryUsage.push_back(
+            MemoryItem{
+                (ADDRESS)left.itemAddressEnd,
+                (ADDRESS)left.itemAddressEnd + size,
+                (ADDRESS)size,
+                PID_c});
 
-    return found_valid_memory;
+        this->used_memory += size;
+        this->PID_c++;
+        return true;
+    }
+
+    std::vector<Hole> holes;
+
+    for (auto it = this->MemoryUsage.begin(); it != this->MemoryUsage.end(); it++)
+    {
+        if (it + 1 == MemoryUsage.end())
+        {
+            holes.push_back(
+                Hole{
+                    it->itemAddressEnd,
+                    (ADDRESS)total_memory,
+                    (ADDRESS)total_memory - it->itemAddressEnd});
+            break;
+        }
+        else
+        {
+            if (it->itemAddressEnd == (*(it + 1)).itemAddress)
+            {
+                continue;
+            }
+            else
+            {
+                holes.push_back(
+                    Hole{
+                        it->itemAddressEnd,
+                        (*(it + 1)).itemAddress,
+                        (*(it + 1)).itemAddress - it->itemAddressEnd});
+            }
+        }
+    }
+
+    std::sort(holes.begin(), holes.end(), std::greater<Hole>());
+
+    // Hole *ideal = nullptr;
+    std::shared_ptr<Hole> ideal = nullptr;
+
+    std::cout << "found holes: " << std::endl;
+    for (auto h : holes)
+    {
+        if (h.size >= size)
+        {
+            ideal = std::make_shared<Hole>(h);
+        }
+    }
+
+    if (ideal == nullptr)
+    {
+        return false;
+    }
+
+    process_queue.push(
+        Process{
+            priority, size, PID_c});
+    MemoryUsage.push_back(
+        MemoryItem{
+            (ADDRESS)ideal->start,
+            (ADDRESS)ideal->start + size,
+            (ADDRESS)size,
+            PID_c});
+
+    this->used_memory += size;
+    this->PID_c++;
+
+    std::sort(MemoryUsage.begin(), MemoryUsage.end());
+    return true;
 }
 
 bool SimOS::SimFork()
@@ -97,5 +142,18 @@ bool SimOS::SimFork()
 
 void SimOS::SimExit()
 {
+    if (process_queue.empty())
+    {
+        return;
+    }
+
+    int kill_pid = process_queue.top().PID;
+
     process_queue.pop();
+    MemoryUsage.erase(
+        std::remove_if(MemoryUsage.begin(),
+                       MemoryUsage.end(),
+                       [&pid = kill_pid](const MemoryItem &m) -> bool
+                       { return m.PID == pid; }),
+        MemoryUsage.end());
 }

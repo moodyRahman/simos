@@ -5,21 +5,33 @@
 #include <queue>
 #include <algorithm>
 #include <memory>
+#include <deque>
+
 #define ADDRESS unsigned long long
 
 struct Process
 {
+
     int priority;
     int size;
     int PID;
+    int state; // 0 -> running, 1 -> waiting
+    int parent;
 
     friend bool operator<(Process const &a, Process const &b)
     {
         /**
          * while std::priority queue is weakly stable, it's not guaranteed to maintain
          * order of insertion when two processes have the same priority.
-         * fall back to ordering by PID for equal priority processes
+         * fall back to ordering by PID for equal priority processes.
+         * additionally, guarantee that waiting processes are always handled last
          */
+
+        if (a.state > b.state)
+        {
+            return a.state > b.state;
+        }
+
         if (a.priority == b.priority)
         {
             return b.PID > a.PID;
@@ -31,7 +43,8 @@ struct Process
     {
         os << "pid: " << p.PID << " | "
            << "priority:" << p.priority << " | "
-           << "memory usage: " << p.size;
+           << "memory usage: " << p.size << " | "
+           << "state: " << (p.state) << " | " << (p.parent);
     }
 };
 

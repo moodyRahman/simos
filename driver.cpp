@@ -27,9 +27,7 @@ int main(int argc, char const *argv[])
     s.NewProcess(3, 5);
 
     s.SimExit();
-    std::cout << "exited" << std::endl;
     s.SimExit();
-    std::cout << "exited" << std::endl;
 
     s.NewProcess(2, 600);
     s.NewProcess(2, 5);
@@ -38,18 +36,19 @@ int main(int argc, char const *argv[])
     s.NewProcess(2, 5);
     s.NewProcess(2, 5);
 
-    // while (!s.process_queue.empty())
-    // {
-    //     std::cout << s.process_queue.top() << "\n";
-    //     s.process_queue.pop();
-    // }
-
-    std::cout
-        << "=============" << std::endl;
-    for (auto x : s.MemoryUsage)
+    // std::cout << s.process_queue.top() << std::endl;
+    while (!s.process_queue.empty())
     {
-        std::cout << x << std::endl;
+        std::cout << s.process_queue.top() << "\n";
+        s.process_queue.pop();
     }
+
+    // std::cout
+    //     << "=============" << std::endl;
+    // for (auto x : s.MemoryUsage)
+    // {
+    //     std::cout << x << std::endl;
+    // }
 
     return 0;
 }

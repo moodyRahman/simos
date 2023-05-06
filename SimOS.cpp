@@ -19,7 +19,7 @@ bool SimOS::NewProcess(int priority, int size)
     {
         process_queue.push(
             Process{
-                priority, size, PID_c});
+                priority, size, PID_c, 1});
         MemoryUsage.push_back(
             MemoryItem{
                 (ADDRESS)0,
@@ -36,7 +36,7 @@ bool SimOS::NewProcess(int priority, int size)
         auto left = MemoryUsage[0];
         process_queue.push(
             Process{
-                priority, size, PID_c});
+                priority, size, PID_c, 1});
         MemoryUsage.push_back(
             MemoryItem{
                 (ADDRESS)left.itemAddressEnd,
@@ -84,7 +84,6 @@ bool SimOS::NewProcess(int priority, int size)
     // Hole *ideal = nullptr;
     std::shared_ptr<Hole> ideal = nullptr;
 
-    std::cout << "found holes: " << std::endl;
     for (auto h : holes)
     {
         if (h.size >= size)
@@ -100,7 +99,7 @@ bool SimOS::NewProcess(int priority, int size)
 
     process_queue.push(
         Process{
-            priority, size, PID_c});
+            priority, size, PID_c, 0});
     MemoryUsage.push_back(
         MemoryItem{
             (ADDRESS)ideal->start,
@@ -128,7 +127,7 @@ void SimOS::SimExit()
     }
 
     int kill_pid = process_queue.top().PID;
-
+    used_memory -= process_queue.top().size;
     process_queue.pop();
     MemoryUsage.erase(
         std::remove_if(MemoryUsage.begin(),

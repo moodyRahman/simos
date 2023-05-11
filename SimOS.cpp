@@ -8,6 +8,11 @@ SimOS::SimOS(int numberOfDisks, int amountOfRAM)
 
 bool SimOS::NewProcess(int priority, int size)
 {
+    return NewProcess(priority, size, 0);
+}
+
+bool SimOS::NewProcess(int priority, int size, int parent_pid)
+{
     if (size > total_memory - used_memory)
     {
         return false;
@@ -17,9 +22,9 @@ bool SimOS::NewProcess(int priority, int size)
 
     if (MemoryUsage.size() == 0)
     {
-        process_queue.push(
+        process_queue.push_front(
             Process{
-                priority, size, PID_c, 1});
+                priority, size, PID_c, 0, parent_pid});
         MemoryUsage.push_back(
             MemoryItem{
                 (ADDRESS)0,
@@ -31,23 +36,24 @@ bool SimOS::NewProcess(int priority, int size)
         return true;
     }
 
-    if (MemoryUsage.size() == 1)
-    {
-        auto left = MemoryUsage[0];
-        process_queue.push(
-            Process{
-                priority, size, PID_c, 1});
-        MemoryUsage.push_back(
-            MemoryItem{
-                (ADDRESS)left.itemAddressEnd,
-                (ADDRESS)left.itemAddressEnd + size,
-                (ADDRESS)size,
-                PID_c});
+    // if (MemoryUsage.size() == 1)
+    // {
+    //     std::cout << "there" << std::endl;
+    //     auto left = MemoryUsage[0];
+    //     process_queue.push_front(
+    //         Process{
+    //             priority, size, PID_c, 0});
+    //     MemoryUsage.push_back(
+    //         MemoryItem{
+    //             (ADDRESS)left.itemAddressEnd,
+    //             (ADDRESS)left.itemAddressEnd + size,
+    //             (ADDRESS)size,
+    //             PID_c});
 
-        this->used_memory += size;
-        this->PID_c++;
-        return true;
-    }
+    //     this->used_memory += size;
+    //     this->PID_c++;
+    //     return true;
+    // }
 
     std::vector<Hole> holes;
 
@@ -97,9 +103,9 @@ bool SimOS::NewProcess(int priority, int size)
         return false;
     }
 
-    process_queue.push(
+    process_queue.push_front(
         Process{
-            priority, size, PID_c, 0});
+            priority, size, PID_c, 0, parent_pid});
     MemoryUsage.push_back(
         MemoryItem{
             (ADDRESS)ideal->start,
@@ -111,6 +117,8 @@ bool SimOS::NewProcess(int priority, int size)
     this->PID_c++;
 
     std::sort(MemoryUsage.begin(), MemoryUsage.end());
+    std::sort(process_queue.begin(), process_queue.end());
+
     return true;
 }
 

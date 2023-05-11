@@ -24,7 +24,7 @@ bool SimOS::NewProcess(int priority, int size, int parent_pid)
     {
         process_queue.push_front(
             Process{
-                priority, size, PID_c, 0, parent_pid});
+                priority, size, PID_c, Process::State::RUNNING, parent_pid});
         MemoryUsage.push_back(
             MemoryItem{
                 (ADDRESS)0,
@@ -105,7 +105,7 @@ bool SimOS::NewProcess(int priority, int size, int parent_pid)
 
     process_queue.push_front(
         Process{
-            priority, size, PID_c, 0, parent_pid});
+            priority, size, PID_c, Process::State::RUNNING, parent_pid});
     MemoryUsage.push_back(
         MemoryItem{
             (ADDRESS)ideal->start,
@@ -124,12 +124,14 @@ bool SimOS::NewProcess(int priority, int size, int parent_pid)
 
 bool SimOS::SimFork()
 {
+    auto top = process_queue.begin();
+    top->children.push_back(PID_c);
     return NewProcess(process_queue[0].priority, process_queue[0].size, process_queue[0].PID);
 }
 
 void SimOS::SimWait()
 {
-    process_queue[0].state = 1;
+    process_queue[0].state = Process::State::WAITING;
     std::sort(process_queue.begin(), process_queue.end());
 }
 
@@ -165,14 +167,26 @@ void SimOS::SimExit()
             return;
         }
 
-        // std::cout << "here be parent" << std::endl;
-        // std::cout << *(parent) << std::endl;
-        // std::cout << "post parent" << std::endl;
-        parent->state = 0;
+        /**
+         * if the parent hasn't called wait yet, this process becomes a zombie
+         */
+        if (parent->state == 0)
+        {
+            victim.state = Process::State::ZOMBIE;
+            return;
+        }
+        else // the parent is in a waiting state, set the parent to be runnable now
+        {
+            parent->state = Process::State::RUNNING;
+        }
     }
 
-    int kill_pid = process_queue[0].PID;
-    used_memory -= process_queue[0].size;
+    int kill_pid = victim.PID;
+    used_memory -= victim.size;
+
+    std::vector<int> kill_list(victim.children);
+
+    // the primary process to kill
     process_queue.pop_front();
     MemoryUsage.erase(
         std::remove_if(MemoryUsage.begin(),
@@ -183,4 +197,43 @@ void SimOS::SimExit()
 
     std::sort(MemoryUsage.begin(), MemoryUsage.end());
     std::sort(process_queue.begin(), process_queue.end());
+
+    // now that we've killed the parent, it's time to cascade kill children
+
+    while (!kill_list.empty())
+    {
+        int c_victim = kill_list[0];
+        kill_list.erase(kill_list.begin());
+        auto c_victim_process = std::find_if(process_queue.begin(),
+                                             process_queue.end(),
+                                             [&pid = c_victim](const Process &m) -> bool
+                                             {
+                                                 return m.PID == pid;
+                                             });
+
+        // append all the children of the process we're killing to kill_list
+        kill_list.insert(kill_list.end(), c_victim_process->children.begin(), c_victim_process->children.end());
+
+        MemoryUsage.erase(
+            std::remove_if(MemoryUsage.begin(),
+                           MemoryUsage.end(),
+                           [&pid = c_victim](const MemoryItem &m) -> bool
+                           { return m.PID == pid; }),
+            MemoryUsage.end());
+
+        process_queue.erase(
+            std::remove_if(process_queue.begin(),
+                           process_queue.end(),
+                           [&pid = c_victim](const Process &m) -> bool
+                           { return m.PID == pid; }),
+            process_queue.end());
+    }
+
+    std::sort(MemoryUsage.begin(), MemoryUsage.end());
+    std::sort(process_queue.begin(), process_queue.end());
+}
+
+int SimOS::GetCPU()
+{
+    return process_queue[0].PID;
 }

@@ -12,11 +12,19 @@
 struct Process
 {
 
+    enum State
+    {
+        RUNNING,
+        WAITING,
+        ZOMBIE
+    };
+
     int priority;
     int size;
     int PID;
-    int state; // 0 -> running, 1 -> waiting, 2-> zombie
+    State state; // 0 -> running, 1 -> waiting, 2-> zombie
     int parent;
+    std::vector<int> children;
 
     friend bool operator<(Process const &a, Process const &b)
     {
@@ -51,11 +59,25 @@ struct Process
 
     friend std::ostream &operator<<(std::ostream &os, const Process &p)
     {
+
+        std::string children_out = "";
+        if (!p.children.empty())
+        {
+            for (auto x : p.children)
+            {
+                children_out += std::to_string(x) + ", ";
+            }
+        }
+
         os << "pid: " << p.PID << " | "
            << "priority:" << p.priority << " | "
            << "memory usage: " << p.size << " | "
-           << "state: " << (p.state) << " | "
-           << "parent: " << (p.parent);
+           << "state: " << (p.state == Process::State::RUNNING ? "running" : p.state == Process::State::WAITING ? "waiting"
+                                                                                                                : "zombie")
+           << " | "
+           << "parent: " << (p.parent) << " | children: " << children_out;
+
+        return os;
     }
 };
 

@@ -124,7 +124,13 @@ bool SimOS::NewProcess(int priority, int size, int parent_pid)
 
 bool SimOS::SimFork()
 {
-    return NewProcess(process_queue.top().priority, process_queue.top().size);
+    return NewProcess(process_queue[0].priority, process_queue[0].size, process_queue[0].PID);
+}
+
+void SimOS::SimWait()
+{
+    process_queue[0].state = 1;
+    std::sort(process_queue.begin(), process_queue.end());
 }
 
 void SimOS::SimExit()
@@ -134,13 +140,47 @@ void SimOS::SimExit()
         return;
     }
 
-    int kill_pid = process_queue.top().PID;
-    used_memory -= process_queue.top().size;
-    process_queue.pop();
+    Process victim = process_queue[0];
+
+    if (victim.parent != 0) // if victim has a parent process
+    {
+        auto parent = std::find_if(
+            std::begin(process_queue),
+            std::end(process_queue),
+            [&parent_pid = victim.parent](const Process &p)
+            {
+                return p.PID == parent_pid;
+            });
+
+        /**
+         * this boolean should never be true!!!
+         * this will only execute if the process we're exiting has a parent that
+         * doesn't exist/ has already exited, ie an orphan process.
+         *
+         * the cascading termination should prevent the existence of any orphans
+         */
+        if (parent == std::end(process_queue))
+        {
+            std::cout << "so... you've found an orphan.... that shouldnt happen" << std::endl;
+            return;
+        }
+
+        // std::cout << "here be parent" << std::endl;
+        // std::cout << *(parent) << std::endl;
+        // std::cout << "post parent" << std::endl;
+        parent->state = 0;
+    }
+
+    int kill_pid = process_queue[0].PID;
+    used_memory -= process_queue[0].size;
+    process_queue.pop_front();
     MemoryUsage.erase(
         std::remove_if(MemoryUsage.begin(),
                        MemoryUsage.end(),
                        [&pid = kill_pid](const MemoryItem &m) -> bool
                        { return m.PID == pid; }),
         MemoryUsage.end());
+
+    std::sort(MemoryUsage.begin(), MemoryUsage.end());
+    std::sort(process_queue.begin(), process_queue.end());
 }

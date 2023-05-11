@@ -14,13 +14,13 @@ struct Process
 
     enum State
     {
-        RUNNING,
-        WAITING,
-        ZOMBIE
+        RUNNING = 0,
+        WAITING = 1,
+        ZOMBIE = 2
     };
 
     int priority;
-    int size;
+    ADDRESS size;
     int PID;
     State state; // 0 -> running, 1 -> waiting, 2-> zombie
     int parent;
@@ -138,8 +138,8 @@ public:
     int PID_c = 1;
 
     SimOS(int numberOfDisks, int amountOfRAM);
-    bool NewProcess(int priority, int size);
-    bool NewProcess(int priority, int size, int parent_pid);
+    bool NewProcess(int priority, ADDRESS size);
+    bool NewProcess(int priority, ADDRESS size, int parent_pid);
     bool SimFork();
     void SimExit();
     void SimWait();
@@ -149,4 +149,5 @@ public:
     std::vector<int> GetReadyQueue();
     FileReadRequest GetDisk(int diskNumber);
     std::queue<FileReadRequest> GetDiskQueue(int diskNumber);
+    void display();
 };

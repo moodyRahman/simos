@@ -6,12 +6,12 @@ SimOS::SimOS(int numberOfDisks, int amountOfRAM)
     this->total_memory = amountOfRAM;
 }
 
-bool SimOS::NewProcess(int priority, int size)
+bool SimOS::NewProcess(int priority, ADDRESS size)
 {
     return NewProcess(priority, size, 0);
 }
 
-bool SimOS::NewProcess(int priority, int size, int parent_pid)
+bool SimOS::NewProcess(int priority, ADDRESS size, int parent_pid)
 {
     if (size > total_memory - used_memory)
     {
@@ -35,25 +35,6 @@ bool SimOS::NewProcess(int priority, int size, int parent_pid)
         this->PID_c++;
         return true;
     }
-
-    // if (MemoryUsage.size() == 1)
-    // {
-    //     std::cout << "there" << std::endl;
-    //     auto left = MemoryUsage[0];
-    //     process_queue.push_front(
-    //         Process{
-    //             priority, size, PID_c, 0});
-    //     MemoryUsage.push_back(
-    //         MemoryItem{
-    //             (ADDRESS)left.itemAddressEnd,
-    //             (ADDRESS)left.itemAddressEnd + size,
-    //             (ADDRESS)size,
-    //             PID_c});
-
-    //     this->used_memory += size;
-    //     this->PID_c++;
-    //     return true;
-    // }
 
     std::vector<Hole> holes;
 
@@ -169,8 +150,14 @@ void SimOS::SimExit()
 
         /**
          * if the parent hasn't called wait yet, this process becomes a zombie
+         *
+         * im pretty sure this would never occur though, as the parent process
+         * (with the lower PID than the child) would always go before any child
+         * process with a higher PID
+         *
+         * implementing it here just in case
          */
-        if (parent->state == 0)
+        if (parent->state == Process::State::RUNNING)
         {
             victim.state = Process::State::ZOMBIE;
             return;
@@ -236,4 +223,24 @@ void SimOS::SimExit()
 int SimOS::GetCPU()
 {
     return process_queue[0].PID;
+}
+
+void SimOS::display()
+{
+    std::cout << "RUNNING PROCESSES" << std::endl;
+    for (auto x : process_queue)
+    {
+        std::cout << x << std::endl;
+    }
+
+    std::cout << std::endl;
+
+    std::cout << "MEMORY MAP" << std::endl;
+    for (auto x : MemoryUsage)
+    {
+        std::cout << x << std::endl;
+    }
+    std::cin.get();
+
+    std::cout << "============================" << std::endl;
 }

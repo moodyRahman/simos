@@ -15,7 +15,7 @@ struct Process
     int priority;
     int size;
     int PID;
-    int state; // 0 -> running, 1 -> waiting
+    int state; // 0 -> running, 1 -> waiting, 2-> zombie
     int parent;
 
     friend bool operator<(Process const &a, Process const &b)
@@ -27,16 +27,26 @@ struct Process
          * additionally, guarantee that waiting processes are always handled last
          */
 
-        if (a.state > b.state)
+        if (a.state != b.state)
         {
-            return a.state > b.state;
+            return a.state < b.state;
         }
+
+        // if (a.state < b.state)
+        // {
+        //     return a.state < b.state;
+        // }
+
+        // if (b.state > a.state)
+        // {
+        //     return b.state > a.state;
+        // }
 
         if (a.priority == b.priority)
         {
             return b.PID > a.PID;
         }
-        return a.priority < b.priority;
+        return a.priority > b.priority;
     }
 
     friend std::ostream &operator<<(std::ostream &os, const Process &p)
@@ -44,7 +54,8 @@ struct Process
         os << "pid: " << p.PID << " | "
            << "priority:" << p.priority << " | "
            << "memory usage: " << p.size << " | "
-           << "state: " << (p.state) << " | " << (p.parent);
+           << "state: " << (p.state) << " | "
+           << "parent: " << (p.parent);
     }
 };
 
@@ -97,7 +108,7 @@ struct Hole
 class SimOS
 {
 public:
-    std::priority_queue<Process, std::vector<Process>, std::less<Process>> process_queue;
+    std::deque<Process> process_queue;
     // TODO: reimplement this with a heap so that we can guarantee that it's in order when we traverse it
     std::vector<MemoryItem> MemoryUsage;
     int total_memory;
@@ -106,6 +117,7 @@ public:
 
     SimOS(int numberOfDisks, int amountOfRAM);
     bool NewProcess(int priority, int size);
+    bool NewProcess(int priority, int size, int parent_pid);
     bool SimFork();
     void SimExit();
     void SimWait();

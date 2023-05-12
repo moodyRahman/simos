@@ -14,9 +14,11 @@ struct Process
 
     enum State
     {
+        READING = -1,
         RUNNING = 0,
         WAITING = 1,
-        ZOMBIE = 2
+        ZOMBIE = 2,
+
     };
 
     int priority;
@@ -39,17 +41,6 @@ struct Process
         {
             return a.state < b.state;
         }
-
-        // if (a.state < b.state)
-        // {
-        //     return a.state < b.state;
-        // }
-
-        // if (b.state > a.state)
-        // {
-        //     return b.state > a.state;
-        // }
-
         if (a.priority == b.priority)
         {
             return b.PID > a.PID;
@@ -120,7 +111,6 @@ struct Hole
            << "size: " << p.size;
     }
 
-    // it's a little hacky but it's
     friend bool operator>(Hole const &a, Hole const &b)
     {
         return a.size > b.size;

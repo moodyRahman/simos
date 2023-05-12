@@ -198,6 +198,8 @@ void SimOS::SimExit()
                                                  return m.PID == pid;
                                              });
 
+        used_memory -= c_victim_process->size;
+
         // append all the children of the process we're killing to kill_list
         kill_list.insert(kill_list.end(), c_victim_process->children.begin(), c_victim_process->children.end());
 
@@ -222,7 +224,7 @@ void SimOS::SimExit()
 
 int SimOS::GetCPU()
 {
-    return process_queue[0].PID;
+    return process_queue.empty() ? 0 : process_queue[0].PID;
 }
 
 void SimOS::display()
@@ -240,7 +242,13 @@ void SimOS::display()
     {
         std::cout << x << std::endl;
     }
+
+    std::cout << "memory usage: " << used_memory << std::endl;
     std::cin.get();
 
     std::cout << "============================" << std::endl;
+}
+
+void SimOS::DiskReadRequest(int diskNumber, std::string fileName)
+{
 }

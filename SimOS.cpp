@@ -42,6 +42,15 @@ bool SimOS::NewProcess(int priority, ADDRESS size, int parent_pid)
 
     std::vector<Hole> holes;
 
+    if (MemoryUsage.begin()->itemAddress > 0)
+    {
+        holes.push_back(
+            Hole{
+                0,
+                MemoryUsage.begin()->itemAddress,
+                MemoryUsage.begin()->itemAddress});
+    }
+
     for (auto it = this->MemoryUsage.begin(); it != this->MemoryUsage.end(); it++)
     {
         if (it + 1 == MemoryUsage.end())
@@ -240,6 +249,37 @@ void SimOS::SimExit()
                                                  return m.PID == pid;
                                              });
 
+        if (c_victim_process->state == Process::State::READING)
+        {
+            bool canary = false;
+            for (auto queue = file_requests.begin(); queue != file_requests.end(); queue++)
+            {
+                for (auto freq = queue->begin(); freq != queue->end(); freq++)
+                {
+                    if (freq->PID == c_victim)
+                    {
+                        queue->erase(freq);
+                        canary = true;
+                        break;
+                    }
+                }
+                if (canary)
+                {
+                    break;
+                }
+            }
+        }
+
+        // auto c_victim_freq = std::find_if(file_requests.begin(),
+        //                                   file_requests.end(),
+        //                                   [&pid = c_victim](const std::deque<FileReadRequest> &m) -> bool
+        //                                   {
+        //                                       auto freq = std::find_if(m.begin(), m.end(), [&pid = pid](const FileReadRequest &f) -> bool
+        //                                                                { return f.PID == pid; });
+        //                                       return (freq != m.end());
+        //                                   });
+        // std::cout << c_victim_freq-> << std::endl;
+
         used_memory -= c_victim_process->size;
 
         // append all the children of the process we're killing to kill_list
@@ -297,6 +337,10 @@ FileReadRequest SimOS::GetDisk(int diskNumber)
 
 std::queue<FileReadRequest> SimOS::GetDiskQueue(int diskNumber)
 {
+    if (file_requests[diskNumber].size() <= 1)
+    {
+        return std::queue<FileReadRequest>{};
+    }
     std::deque<FileReadRequest> out(file_requests[diskNumber].begin() + 1, file_requests[diskNumber].end());
     return std::queue<FileReadRequest>(out);
 }

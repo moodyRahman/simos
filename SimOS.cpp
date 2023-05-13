@@ -146,6 +146,7 @@ void SimOS::SimWait()
         {
             process_queue.erase(child);
             x = head->children.erase(x);
+            head->state = Process::State::RUNNING;
             break;
         }
     }
@@ -160,6 +161,11 @@ void SimOS::SimExit()
     }
 
     auto victim = process_queue.begin();
+
+    if (victim->state != Process::State::RUNNING)
+    {
+        return;
+    }
 
     if (victim->parent != 0) // if victim has a parent process
     {

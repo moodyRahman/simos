@@ -4,6 +4,10 @@
 SimOS::SimOS(int numberOfDisks, int amountOfRAM)
 {
     this->total_memory = amountOfRAM;
+    for (int x = 0; x < numberOfDisks; x++)
+    {
+        this->file_requests.push_back(std::deque<FileReadRequest>{});
+    }
 }
 
 bool SimOS::NewProcess(int priority, ADDRESS size)
@@ -112,7 +116,30 @@ bool SimOS::SimFork()
 
 void SimOS::SimWait()
 {
-    process_queue[0].state = Process::State::WAITING;
+    auto head = process_queue.begin();
+    head->state = Process::State::WAITING;
+    for (auto x = head->children.begin(); x != head->children.end(); x++)
+    {
+        auto child = std::find_if(
+            std::begin(process_queue),
+            std::end(process_queue),
+            [&pid = *x](const Process &p)
+            {
+                return p.PID == pid && p.state == Process::State::ZOMBIE;
+            });
+
+        // this also should never happen, but im leaving it here just in case
+        if (child == process_queue.end())
+        {
+            continue;
+        }
+        else
+        {
+            process_queue.erase(child);
+            x = head->children.erase(x);
+            break;
+        }
+    }
     std::sort(process_queue.begin(), process_queue.end());
 }
 
@@ -123,14 +150,14 @@ void SimOS::SimExit()
         return;
     }
 
-    Process victim = process_queue[0];
+    auto victim = process_queue.begin();
 
-    if (victim.parent != 0) // if victim has a parent process
+    if (victim->parent != 0) // if victim has a parent process
     {
         auto parent = std::find_if(
             std::begin(process_queue),
             std::end(process_queue),
-            [&parent_pid = victim.parent](const Process &p)
+            [&parent_pid = victim->parent](const Process &p)
             {
                 return p.PID == parent_pid;
             });
@@ -157,24 +184,39 @@ void SimOS::SimExit()
          *
          * implementing it here just in case
          */
-        if (parent->state == Process::State::RUNNING)
+        if (parent->state != Process::State::WAITING)
         {
-            victim.state = Process::State::ZOMBIE;
+
+            victim->state = Process::State::ZOMBIE;
+            used_memory -= victim->size;
+
+            MemoryUsage.erase(
+                std::remove_if(MemoryUsage.begin(),
+                               MemoryUsage.end(),
+                               [&pid = victim->PID](const MemoryItem &m) -> bool
+                               { return m.PID == pid; }),
+                MemoryUsage.end());
+
+            std::sort(MemoryUsage.begin(), MemoryUsage.end());
+            std::sort(process_queue.begin(), process_queue.end());
+
             return;
         }
-        else // the parent is in a waiting state, set the parent to be runnable now
+        else if (parent->state == Process::State::WAITING)
         {
+            // if the parent was waiting for this process to finish, set the parent to running
+            // and proceed to kill this process as usual
             parent->state = Process::State::RUNNING;
         }
     }
 
-    int kill_pid = victim.PID;
-    used_memory -= victim.size;
+    int kill_pid = victim->PID;
+    used_memory -= victim->size;
 
-    std::vector<int> kill_list(victim.children);
+    std::vector<int> kill_list(victim->children);
 
     // the primary process to kill
-    process_queue.pop_front();
+    process_queue.erase(victim);
     MemoryUsage.erase(
         std::remove_if(MemoryUsage.begin(),
                        MemoryUsage.end(),
@@ -224,7 +266,44 @@ void SimOS::SimExit()
 
 int SimOS::GetCPU()
 {
-    return process_queue.empty() ? 0 : process_queue[0].PID;
+    for (auto x : process_queue)
+    {
+        if (x.state == Process::State::RUNNING)
+        {
+            return x.PID;
+        }
+    }
+    return 0;
+}
+
+std::vector<int> SimOS::GetReadyQueue()
+{
+    std::vector<int> out{};
+    for (auto x = process_queue.begin() + 1; x != process_queue.end(); x++)
+    {
+        if (x->state == Process::State::RUNNING)
+        {
+            out.push_back(x->PID);
+        }
+    }
+    return out;
+}
+
+FileReadRequest SimOS::GetDisk(int diskNumber)
+{
+
+    return file_requests[diskNumber].empty() ? FileReadRequest{} : file_requests[diskNumber].front();
+}
+
+std::queue<FileReadRequest> SimOS::GetDiskQueue(int diskNumber)
+{
+    std::deque<FileReadRequest> out(file_requests[diskNumber].begin() + 1, file_requests[diskNumber].end());
+    return std::queue<FileReadRequest>(out);
+}
+
+std::vector<MemoryItem> SimOS::GetMemory()
+{
+    return this->MemoryUsage;
 }
 
 void SimOS::display()
@@ -251,4 +330,29 @@ void SimOS::display()
 
 void SimOS::DiskReadRequest(int diskNumber, std::string fileName)
 {
+    auto reader = process_queue.begin();
+
+    if (reader->state != Process::State::RUNNING)
+    {
+        return;
+    }
+
+    reader->state = Process::State::READING;
+    file_requests[diskNumber].push_back(FileReadRequest{reader->PID, fileName});
+    std::sort(process_queue.begin(), process_queue.end());
+}
+
+void SimOS::DiskJobCompleted(int diskNumber)
+{
+    int reader_pid = file_requests[diskNumber].front().PID;
+    file_requests[diskNumber].pop_front();
+    auto reader = std::find_if(process_queue.begin(),
+                               process_queue.end(),
+                               [&pid = reader_pid](const Process &m) -> bool
+                               {
+                                   return m.PID == pid;
+                               });
+
+    reader->state = Process::State::RUNNING;
+    std::sort(process_queue.begin(), process_queue.end());
 }

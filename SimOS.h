@@ -14,11 +14,10 @@ struct Process
 
     enum State
     {
-        READING = -1,
         RUNNING = 0,
         WAITING = 1,
-        ZOMBIE = 2,
-
+        READING = 2,
+        ZOMBIE = 3,
     };
 
     int priority;
@@ -60,13 +59,14 @@ struct Process
             }
         }
 
+        std::array<std::string, 4> enum2s{"running", "waiting", "reading", "zombie"};
+
         os << "pid: " << p.PID << " | "
            << "priority:" << p.priority << " | "
            << "memory usage: " << p.size << " | "
-           << "state: " << (p.state == Process::State::RUNNING ? "running" : p.state == Process::State::WAITING ? "waiting"
-                                                                                                                : "zombie")
-           << " | "
-           << "parent: " << (p.parent) << " | children: " << children_out;
+           << "state: " << enum2s[p.state] << " | "
+           << "parent: " << (p.parent) << " | "
+           << "children: " << children_out;
 
         return os;
     }
@@ -126,6 +126,7 @@ public:
     int total_memory;
     int used_memory = 0;
     int PID_c = 1;
+    std::vector<std::deque<FileReadRequest>> file_requests;
 
     SimOS(int numberOfDisks, int amountOfRAM);
     bool NewProcess(int priority, ADDRESS size);
@@ -139,5 +140,6 @@ public:
     std::vector<int> GetReadyQueue();
     FileReadRequest GetDisk(int diskNumber);
     std::queue<FileReadRequest> GetDiskQueue(int diskNumber);
+    std::vector<MemoryItem> GetMemory();
     void display();
 };

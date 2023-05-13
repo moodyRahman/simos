@@ -3,53 +3,30 @@
 int main(int argc, char const *argv[])
 {
 
-    SimOS s(5, 500);
-    s.NewProcess(2, 15);
-    s.NewProcess(2, 10);
+    SimOS sim{2, 20000};
 
-    s.SimFork();
-    s.SimFork();
+    sim.NewProcess(5, 1000);
+    sim.display();
 
-    s.NewProcess(3, 5);
-    s.SimExit();
-    s.SimWait();
-    s.SimExit();
-    s.display();
-    s.SimFork();
-    s.display();
-    s.SimWait();
-    s.SimWait();
-    s.SimWait();
-    s.display();
-    s.SimExit();
-    s.display();
+    sim.NewProcess(3, 1000);
+    sim.display();
 
-    // s.SimFork();
-    // s.SimFork();
+    sim.NewProcess(8, 1000);
+    sim.display();
 
-    // s.SimWait();
+    sim.DiskReadRequest(0, "abc");
+    sim.display();
 
-    // s.NewProcess(4, 10);
+    sim.DiskReadRequest(1, "abc");
+    sim.display();
 
-    // s.NewProcess(2, 10);
-    // s.NewProcess(2, 10);
-    // s.SimFork();
-    // s.SimWait();
-    // s.SimExit();
+    std::cout << "==================" << std::endl;
 
-    // std::cout << s.process_queue.top() << std::endl;
-    // while (!s.process_queue.empty())
-    // {
-    //     std::cout << s.process_queue[0] << "\n";
-    //     s.process_queue.;
-    // }
-
-    // std::cout
-    //     << "=============" << std::endl;
-    // for (auto x : s.MemoryUsage)
-    // {
-    //     std::cout << x << std::endl;
-    // }
-
-    return 0;
+    sim.DiskReadRequest(1, "abc");
+    // CHECK(sim.GetCPU() == 0);
+    sim.display();
+    // CHECK(sim.GetDisk(1).PID == 1);
+    sim.display();
+    auto q1{sim.GetDiskQueue(1)};
+    sim.display();
 }

@@ -42,6 +42,9 @@ int Test_1()
 	CHECK(sim.GetCPU() == 0);
 	CHECK(sim.GetDisk(1).PID == 1);
 	auto q1{sim.GetDiskQueue(1)};
+
+	std::cout << &q1 << std::endl;
+	std::cout << q1.size() << std::endl;
 	CHECK(q1.size() == 1);
 	CHECK(q1.front().PID == 2);
 
@@ -54,6 +57,7 @@ int Test_1()
 	sim.DiskJobCompleted(1);
 	CHECK(sim.GetCPU() == 1);
 	CHECK(sim.GetDisk(1).PID == 0);
+	std::cout << "h" << std::endl;
 	CHECK(sim.GetReadyQueue()[0] == 2);
 
 	sim.DiskJobCompleted(0);

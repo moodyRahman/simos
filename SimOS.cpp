@@ -29,7 +29,7 @@ bool SimOS::NewProcess(int priority, ADDRESS size, int parent_pid)
 
     bool found_valid_memory = false;
 
-    if (MemoryUsage.size() == 0)
+    if (MemoryUsage.empty())
     {
         process_queue.push_front(
             Process{
@@ -197,12 +197,6 @@ void SimOS::SimExit()
 
         /**
          * if the parent hasn't called wait yet, this process becomes a zombie
-         *
-         * im pretty sure this would never occur though, as the parent process
-         * (with the lower PID than the child) would always go before any child
-         * process with a higher PID
-         *
-         * implementing it here just in case
          */
         if (parent->state != Process::State::WAITING)
         {
@@ -244,8 +238,8 @@ void SimOS::SimExit()
                        { return m.PID == pid; }),
         MemoryUsage.end());
 
-    std::sort(MemoryUsage.begin(), MemoryUsage.end());
-    std::sort(process_queue.begin(), process_queue.end());
+    // std::sort(MemoryUsage.begin(), MemoryUsage.end());
+    // std::sort(process_queue.begin(), process_queue.end());
 
     // now that we've killed the parent, it's time to cascade kill children
     while (!kill_list.empty())

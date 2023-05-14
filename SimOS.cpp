@@ -96,8 +96,13 @@ bool SimOS::NewProcess(int priority, ADDRESS size, int parent_pid)
         }
     }
 
-    // sort holes according to their sizes, smallest holes first
-    // prefer earlier holes for same sized holes
+    /**
+     *
+     * sort holes according to their sizes, smallest holes first
+     * prefer earlier holes for same sized holes
+     * std::sort isnt stable, so the Hole comparator also has an address fallback
+     * if sizes are equal
+     */
     std::sort(holes.begin(), holes.end(), std::greater<Hole>());
 
     // Hole *ideal = nullptr;
@@ -149,6 +154,13 @@ bool SimOS::NewProcess(int priority, ADDRESS size, int parent_pid)
 bool SimOS::SimFork()
 {
     auto top = process_queue.begin();
+
+    if (top->state != Process::State::RUNNING || top == process_queue.end())
+    {
+        std::cout << "no valid process, ignoring" << std::endl;
+        return false;
+    }
+
     top->children.push_back(PID_c);
     // lets let NewProcess figure out whether this is a legal fork and allocating its memory
     return NewProcess(process_queue[0].priority, process_queue[0].size, process_queue[0].PID);
@@ -157,6 +169,13 @@ bool SimOS::SimFork()
 void SimOS::SimWait()
 {
     auto head = process_queue.begin();
+
+    if (head->state != Process::State::RUNNING || head == process_queue.end())
+    {
+        std::cout << "no valid process, ignoring" << std::endl;
+        return;
+    }
+
     head->state = Process::State::WAITING;
     for (auto x = head->children.begin(); x != head->children.end(); x++)
     {
@@ -195,8 +214,10 @@ void SimOS::SimExit()
     }
 
     auto victim = process_queue.begin();
-    if (victim->state != Process::State::RUNNING)
+
+    if (victim->state != Process::State::RUNNING || victim == process_queue.end())
     {
+        std::cout << "no valid process, ignoring" << std::endl;
         return;
     }
 
@@ -215,7 +236,7 @@ void SimOS::SimExit()
          * this will only execute if the process we're exiting has a parent that
          * doesn't exist/ has already exited, ie an orphan process.
          *
-         * the cascading termination should prevent the existence of any orphans
+         * the cascading termination algo should prevent the existence of any orphans
          */
         if (parent == std::end(process_queue))
         {
@@ -401,6 +422,11 @@ void SimOS::display()
 
 void SimOS::DiskReadRequest(int diskNumber, std::string fileName)
 {
+    if (diskNumber >= file_requests.size() || diskNumber < 0)
+    {
+        std::cout << "bad disk number, ignoring instruction" << std::endl;
+        return;
+    }
     auto reader = process_queue.begin();
 
     // if the "top" process is anything but running, do nothing
@@ -416,6 +442,11 @@ void SimOS::DiskReadRequest(int diskNumber, std::string fileName)
 
 void SimOS::DiskJobCompleted(int diskNumber)
 {
+    if (diskNumber >= file_requests.size() || diskNumber < 0)
+    {
+        std::cout << "bad disk number, ignoring instruction" << std::endl;
+        return;
+    }
     int reader_pid = file_requests[diskNumber].front().PID;
     file_requests[diskNumber].pop_front();
     auto reader = std::find_if(process_queue.begin(),

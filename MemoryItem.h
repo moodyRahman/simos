@@ -16,6 +16,8 @@ struct MemoryItem
         os << "address: " << p.itemAddress << " to " << p.itemAddressEnd << " | "
            << "size:" << p.itemSize << " | "
            << "PID: " << p.PID;
+
+        return os;
     }
 
     friend bool operator<(MemoryItem const &a, MemoryItem const &b)

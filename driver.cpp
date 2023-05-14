@@ -14,6 +14,9 @@ int main(int argc, char const *argv[])
     sim.NewProcess(8, 1000);
     sim.display();
 
+    sim.SimFork();
+    sim.display();
+
     sim.DiskReadRequest(0, "abc");
     sim.display();
 

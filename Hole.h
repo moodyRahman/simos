@@ -23,7 +23,7 @@ struct Hole
     {
         if (a.size == b.size)
         {
-            return a.start < b.start;
+            return a.start > b.start;
         }
 
         return a.size > b.size;

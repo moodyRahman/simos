@@ -34,6 +34,9 @@ struct Process
     int parent;
     std::vector<int> children;
 
+    // making this array into a const prevents us from allocating its memory every time :)
+    const std::array<std::string, 4> mapping{"running", "waiting", "reading", "zombie"};
+
     friend bool operator<(Process const &a, Process const &b)
     {
         /**
@@ -65,12 +68,10 @@ struct Process
             }
         }
 
-        std::array<std::string, 4> enum2s{"running", "waiting", "reading", "zombie"};
-
         os << "pid: " << p.PID << " | "
            << "priority:" << p.priority << " | "
            << "memory usage: " << p.size << " | "
-           << "state: " << enum2s[p.state] << " | "
+           << "state: " << p.mapping[p.state] << " | "
            << "parent: " << (p.parent) << " | "
            << "children: " << children_out;
 

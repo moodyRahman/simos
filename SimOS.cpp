@@ -1,7 +1,7 @@
 // Moududur Rahman
 #include "SimOS.h"
 
-SimOS::SimOS(int numberOfDisks, int amountOfRAM)
+SimOS::SimOS(int numberOfDisks, ADDRESS amountOfRAM)
 {
     this->total_memory = amountOfRAM;
     for (int x = 0; x < numberOfDisks; x++)
@@ -17,7 +17,12 @@ bool SimOS::NewProcess(int priority, ADDRESS size)
 
 bool SimOS::NewProcess(int priority, ADDRESS size, int parent_pid)
 {
-    if (size > total_memory - used_memory)
+    int n_used_memory = 0;
+    for (auto x : process_queue)
+    {
+        n_used_memory += x.size;
+    }
+    if (size > total_memory - n_used_memory)
     {
         return false;
     }
@@ -186,7 +191,7 @@ void SimOS::SimExit()
          */
         if (parent == std::end(process_queue))
         {
-            std::cout << "so... you've found an orphan.... that shouldnt happen" << std::endl;
+            // std::cout << "so... you've found an orphan.... that shouldnt happen" << std::endl;
             return;
         }
 
@@ -243,7 +248,6 @@ void SimOS::SimExit()
     std::sort(process_queue.begin(), process_queue.end());
 
     // now that we've killed the parent, it's time to cascade kill children
-
     while (!kill_list.empty())
     {
         int c_victim = kill_list[0];
@@ -275,17 +279,6 @@ void SimOS::SimExit()
                 }
             }
         }
-
-        // auto c_victim_freq = std::find_if(file_requests.begin(),
-        //                                   file_requests.end(),
-        //                                   [&pid = c_victim](const std::deque<FileReadRequest> &m) -> bool
-        //                                   {
-        //                                       auto freq = std::find_if(m.begin(), m.end(), [&pid = pid](const FileReadRequest &f) -> bool
-        //                                                                { return f.PID == pid; });
-        //                                       return (freq != m.end());
-        //                                   });
-        // std::cout << c_victim_freq-> << std::endl;
-
         used_memory -= c_victim_process->size;
 
         // append all the children of the process we're killing to kill_list

@@ -123,12 +123,12 @@ public:
     std::deque<Process> process_queue;
     // TODO: reimplement this with a heap so that we can guarantee that it's in order when we traverse it
     std::vector<MemoryItem> MemoryUsage;
-    int total_memory;
-    int used_memory = 0;
+    ADDRESS total_memory;
+    ADDRESS used_memory = 0;
     int PID_c = 1;
     std::vector<std::deque<FileReadRequest>> file_requests;
 
-    SimOS(int numberOfDisks, int amountOfRAM);
+    SimOS(int numberOfDisks, ADDRESS amountOfRAM);
     bool NewProcess(int priority, ADDRESS size);
     bool NewProcess(int priority, ADDRESS size, int parent_pid);
     bool SimFork();

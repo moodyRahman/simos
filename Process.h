@@ -11,6 +11,14 @@
 struct Process
 {
 
+    /**
+     * by giving each enum in State a specific integer value, we can sort each
+     * Process using State as what we compare with :)
+     * guaranteeing that running processes are always far left, followed by waiting,
+     * reading, and then zombie processes
+     *
+     * the running processes are then further sorted by priority and PID
+     */
     enum State
     {
         RUNNING = 0,
@@ -29,21 +37,20 @@ struct Process
     friend bool operator<(Process const &a, Process const &b)
     {
         /**
-         * while std::priority queue is weakly stable, it's not guaranteed to maintain
-         * order of insertion when two processes have the same priority.
-         * fall back to ordering by PID for equal priority processes.
-         * additionally, guarantee that waiting processes are always handled last
+         * running a sort on the vector of processes with this comparator
+         * guarantees that the resultant vector is in the proper order
+         * of execution
          */
 
-        if (a.state != b.state)
+        if (a.state != b.state) // processes with different states, sort by state
         {
             return a.state < b.state;
         }
-        if (a.priority == b.priority)
+        if (a.priority == b.priority) // equal priorities prefer older processes
         {
-            return b.PID > a.PID;
+            return a.PID < b.PID;
         }
-        return a.priority > b.priority;
+        return a.priority > b.priority; // otherwise, sort by priority
     }
 
     friend std::ostream &operator<<(std::ostream &os, const Process &p)

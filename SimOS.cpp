@@ -17,6 +17,8 @@ bool SimOS::NewProcess(int priority, ADDRESS size)
 
 bool SimOS::NewProcess(int priority, ADDRESS size, int parent_pid)
 {
+    // keeping a running tally of the current memory use was bug-prone,
+    // settling for calculating the total memory use on a per instantiation basis
     int n_used_memory = 0;
     for (auto x : process_queue)
     {
@@ -29,6 +31,8 @@ bool SimOS::NewProcess(int priority, ADDRESS size, int parent_pid)
 
     bool found_valid_memory = false;
 
+    // handle special case
+    // if there are no memory elements, make one from 0 to size
     if (MemoryUsage.empty())
     {
         process_queue.push_front(
@@ -47,6 +51,9 @@ bool SimOS::NewProcess(int priority, ADDRESS size, int parent_pid)
 
     std::vector<Hole> holes;
 
+    // handle edge case
+    // create a hole from address 0 until the first memeory element
+    // if there is a gap starting from address 0
     if (MemoryUsage.begin()->itemAddress > 0)
     {
         holes.push_back(
@@ -56,8 +63,12 @@ bool SimOS::NewProcess(int priority, ADDRESS size, int parent_pid)
                 MemoryUsage.begin()->itemAddress});
     }
 
+    // because we sort MemoryUsage after modifying it, we can guarantee that
+    // iterating through it will give us adjacent items in memory
     for (auto it = this->MemoryUsage.begin(); it != this->MemoryUsage.end(); it++)
     {
+        // once we reach the last memeory element, add a hole from the end of that
+        // element until the highest address
         if (it + 1 == MemoryUsage.end())
         {
             holes.push_back(
@@ -69,6 +80,7 @@ bool SimOS::NewProcess(int priority, ADDRESS size, int parent_pid)
         }
         else
         {
+            // if where this element ends if where the next element begins, there is no hole
             if (it->itemAddressEnd == (*(it + 1)).itemAddress)
             {
                 continue;
@@ -84,9 +96,12 @@ bool SimOS::NewProcess(int priority, ADDRESS size, int parent_pid)
         }
     }
 
+    // sort holes according to their sizes, smallest holes first
+    // prefer earlier holes for same sized holes
     std::sort(holes.begin(), holes.end(), std::greater<Hole>());
 
     // Hole *ideal = nullptr;
+    // using this instead of a tripwire/ canary boolean
     std::shared_ptr<Hole> ideal = nullptr;
 
     for (auto h : holes)
@@ -102,6 +117,7 @@ bool SimOS::NewProcess(int priority, ADDRESS size, int parent_pid)
         return false;
     }
 
+    // we've successfuly allocated the best fit memory for this process!
     process_queue.push_front(
         Process{
             priority, size, PID_c, Process::State::RUNNING, parent_pid});
@@ -115,6 +131,15 @@ bool SimOS::NewProcess(int priority, ADDRESS size, int parent_pid)
     this->used_memory += size;
     this->PID_c++;
 
+    /**
+     * sort the arrays so MemoryUsage stays contigious
+     * and so that the top of process_queue is the running process
+     *
+     * while this might seem inefficient, it's almost identical to using a priority queue
+     * std::sort is an inplace sort, and with a single element that's not in order
+     * that single element will bubble to it's proper position, call it effectively
+     * O(n)
+     */
     std::sort(MemoryUsage.begin(), MemoryUsage.end());
     std::sort(process_queue.begin(), process_queue.end());
 
@@ -125,6 +150,7 @@ bool SimOS::SimFork()
 {
     auto top = process_queue.begin();
     top->children.push_back(PID_c);
+    // lets let NewProcess figure out whether this is a legal fork and allocating its memory
     return NewProcess(process_queue[0].priority, process_queue[0].size, process_queue[0].PID);
 }
 
@@ -134,6 +160,7 @@ void SimOS::SimWait()
     head->state = Process::State::WAITING;
     for (auto x = head->children.begin(); x != head->children.end(); x++)
     {
+        // search for a zombie child
         auto child = std::find_if(
             std::begin(process_queue),
             std::end(process_queue),
@@ -142,13 +169,15 @@ void SimOS::SimWait()
                 return p.PID == pid && p.state == Process::State::ZOMBIE;
             });
 
-        // this also should never happen, but im leaving it here just in case
+        // we did not find the zombified child, do nothing and try the next child
         if (child == process_queue.end())
         {
             continue;
         }
         else
         {
+            // once we do find the zombie child, prevent the revival of any further children
+            // and dont set this process to wait
             process_queue.erase(child);
             x = head->children.erase(x);
             head->state = Process::State::RUNNING;
@@ -166,7 +195,6 @@ void SimOS::SimExit()
     }
 
     auto victim = process_queue.begin();
-
     if (victim->state != Process::State::RUNNING)
     {
         return;
@@ -253,6 +281,7 @@ void SimOS::SimExit()
                                                  return m.PID == pid;
                                              });
 
+        // if the victim is reading, handle removing it from the file read queue
         if (c_victim_process->state == Process::State::READING)
         {
             bool canary = false;
@@ -269,6 +298,7 @@ void SimOS::SimExit()
                 }
                 if (canary)
                 {
+                    // once we've deleted the victims file read request, do nothing else
                     break;
                 }
             }
@@ -334,12 +364,16 @@ std::queue<FileReadRequest> SimOS::GetDiskQueue(int diskNumber)
     {
         return std::queue<FileReadRequest>{};
     }
+    // we make a deque that has all but the currently reading file
+    // which we then cast to queue
     std::deque<FileReadRequest> out(file_requests[diskNumber].begin() + 1, file_requests[diskNumber].end());
     return std::queue<FileReadRequest>(out);
 }
 
 std::vector<MemoryItem> SimOS::GetMemory()
 {
+    // we can safely do this without worrying about zombie processes because
+    // we deleted their memory during the zombification process
     return this->MemoryUsage;
 }
 
@@ -369,6 +403,7 @@ void SimOS::DiskReadRequest(int diskNumber, std::string fileName)
 {
     auto reader = process_queue.begin();
 
+    // if the "top" process is anything but running, do nothing
     if (reader->state != Process::State::RUNNING)
     {
         return;

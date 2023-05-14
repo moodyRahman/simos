@@ -34,8 +34,8 @@ struct Process
     int parent;
     std::vector<int> children;
 
-    // making this array into a const prevents us from allocating its memory every time :)
-    const std::array<std::string, 4> mapping{"running", "waiting", "reading", "zombie"};
+    // // making this array into a const prevents us from allocating its memory every time :)
+    // const std::array<std::string, 4> mapping{"running", "waiting", "reading", "zombie"};
 
     friend bool operator<(Process const &a, Process const &b)
     {
@@ -58,7 +58,9 @@ struct Process
 
     friend std::ostream &operator<<(std::ostream &os, const Process &p)
     {
-
+        // cant allocate this as a const in the Process, only integral data can be
+        // const in a struct
+        std::array<std::string, 4> mapping{"running", "waiting", "reading", "zombie"};
         std::string children_out = "";
         if (!p.children.empty())
         {
@@ -71,7 +73,7 @@ struct Process
         os << "pid: " << p.PID << " | "
            << "priority:" << p.priority << " | "
            << "memory usage: " << p.size << " | "
-           << "state: " << p.mapping[p.state] << " | "
+           << "state: " << mapping[p.state] << " | "
            << "parent: " << (p.parent) << " | "
            << "children: " << children_out;
 
